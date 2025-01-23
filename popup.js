@@ -9,7 +9,7 @@ document.getElementById("blockForm").addEventListener("submit", async (e) => {
 
   //   Send data to the background script
   chrome.runtime.sendMessage(
-    { type: "updateRules", stringsToBlock: strings },
+    { type: "updateRules", stringsToBlock: strings, duration },
     (response) => {
       if (response.success) {
         document.getElementById("status").textContent =
@@ -20,20 +20,4 @@ document.getElementById("blockForm").addEventListener("submit", async (e) => {
       }
     }
   );
-
-  setTimeout(() => {
-    console.log("EXECUTING TIMEOUT");
-    chrome.runtime.sendMessage(
-      { type: "updateRules", stringsToBlock: [] },
-      (response) => {
-        if (response.success) {
-          document.getElementById("status").textContent =
-            "Blocking rules cleared.";
-        } else {
-          document.getElementById("status").textContent =
-            "Blocking rules failed to clear.";
-        }
-      }
-    );
-  }, duration * 60 * 1000);
 });

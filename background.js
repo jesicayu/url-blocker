@@ -1,50 +1,35 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "updateRules") {
-    const { stringsToBlock } = message;
+    const { stringsToBlock, duration } = message;
 
     // Wrapping the logic in a Promise for async compatibility
     (async () => {
       try {
-        if (stringsToBlock.length === 0) {
-          console.log("No strings to block, removing all rules.");
+        const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+        const oldRuleIds = oldRules.map((rule) => rule.id);
 
-          const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
-          const oldRuleIds = oldRules.map((rule) => rule.id);
-          // Await the removal of all rules
-          await chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: oldRuleIds,
-            addRules: [],
-          });
+        // Create new rules to add
+        const rules = stringsToBlock.map((string, index) => ({
+          id: index + 1,
+          priority: 1,
+          action: { type: "block" },
+          condition: {
+            urlFilter: `*${string}*`,
+            resourceTypes: ["main_frame"],
+          },
+        }));
 
-          console.log("All rules removed!");
-          dynamicRuleIds = []; // Clear the rules
-          sendResponse({ success: true });
-        } else {
-          console.log("Updating blocking rules...");
+        // Await the update of dynamic rules
+        await chrome.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: oldRuleIds,
+          addRules: rules,
+        });
 
-          // Create new rules to add
-          const rules = stringsToBlock.map((string, index) => ({
-            id: index + 1,
-            priority: 1,
-            action: { type: "block" },
-            condition: {
-              urlFilter: `*${string}*`,
-              resourceTypes: ["main_frame"],
-            },
-          }));
+        console.log("Dynamic blocking rules updated successfully!");
 
-          const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
-          const oldRuleIds = oldRules.map((rule) => rule.id);
+        chrome.alarms.create("clearRules", { delayInMinutes: duration });
 
-          // Await the update of dynamic rules
-          await chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: oldRuleIds,
-            addRules: rules,
-          });
-
-          console.log("Dynamic blocking rules updated successfully!");
-          sendResponse({ success: true });
-        }
+        sendResponse({ success: true });
       } catch (error) {
         console.error("Error updating dynamic rules:", error.message);
         sendResponse({ success: false, error: error.message });
@@ -53,5 +38,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     // Return true to indicate asynchronous response
     return true;
+  }
+});
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === "clearRules") {
+    const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const currentRuleIds = currentRules.map((rule) => rule.id);
+    // Await the removal of all rules
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: currentRuleIds,
+      addRules: [],
+    });
+
+    console.log("All rules cleared after timer.");
   }
 });

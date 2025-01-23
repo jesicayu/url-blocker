@@ -3,7 +3,13 @@
   "name": "URL Blocker Timer",
   "version": "1.0",
   "description": "Block websites containing specific strings for a set time.",
-  "permissions": ["webRequest", "declarativeNetRequest", "storage", "tabs"],
+  "permissions": [
+    "webRequest",
+    "declarativeNetRequest",
+    "storage",
+    "tabs",
+    "alarms"
+  ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
