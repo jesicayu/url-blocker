@@ -22,12 +22,18 @@ document.getElementById("blockForm").addEventListener("submit", async (e) => {
   );
 
   setTimeout(() => {
+    console.log("EXECUTING TIMEOUT");
     chrome.runtime.sendMessage(
       { type: "updateRules", stringsToBlock: [] },
-      () => {
-        document.getElementById("status").textContent =
-          "Blocking rules cleared.";
+      (response) => {
+        if (response.success) {
+          document.getElementById("status").textContent =
+            "Blocking rules cleared.";
+        } else {
+          document.getElementById("status").textContent =
+            "Blocking rules failed to clear.";
+        }
       }
     );
-  }, timer * 60 * 1000);
+  }, duration * 60 * 1000);
 });
